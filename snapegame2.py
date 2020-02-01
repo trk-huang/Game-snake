@@ -7,16 +7,12 @@ from pygame.locals import QUIT, KEYDOWN
 
 
 class Snake(object):
-    def __init__(self, colors=list(product([0, 64, 128, 192, 255], repeat=3))[1:-1]):
+    def __init__(self):
         self.map = {(x, y): 0 for x in range(32) for y in range(24)}
         self.body = [[100, 100], [120, 100], [140, 100]]
         self.head = [140, 100]
-        self.colors = colors
-        self.food = []
-        self.food_color = []
         self.moving_direction = 'right'
         self.speed = 10
-        self.generate_food()
         self.game_started = False
 
     def check_game_status(self):
@@ -37,20 +33,25 @@ class Snake(object):
         self.head[0] += step[0]
         self.head[1] += step[1]
 
-    def generate_food(self):
-        self.speed = len(self.body) // 16 if len(self.body) // 16 > 4 else self.speed
-        for seg in self.body:
-            x, y = seg
-            self.map[x // 20, y // 20] = 1
-        empty_pos = [pos for pos in self.map.keys() if not self.map[pos]]
-        result = choice(empty_pos)
-        self.food_color = list(choice(self.colors))
-        self.food = [result[0] * 20, result[1] * 20]
 
+class Food(object):
+    def __init__(self, pos, colors):
+        self.colors = colors
+        self.food_postion = [pos[0], pos[1]]
 
 class GameSnake(object):
     def __init__(self, snake):
         self.snake = snake
+        self.generate_food()
+
+    def generate_food(self):
+        self.snake.speed = len(self.snake.body) // 16 if len(self.snake.body) // 16 > 4 else self.snake.speed
+        for seg in self.snake.body:
+            x, y = seg
+            self.snake.map[x // 20, y // 20] = 1
+        empty_pos = [pos for pos in self.snake.map.keys() if not self.snake.map[pos]]
+        result = choice(empty_pos)
+        self.food = Food(([result[0] * 20, result[1] * 20]), list(choice(list(product([0, 64, 128, 192, 255], repeat=3))[1:-1])))
 
     def direction_check(self, moving_direction, change_direction):
         directions = [['up', 'down'], ['left', 'right']]
@@ -103,13 +104,13 @@ class GameSnake(object):
                 self.snake.moving_direction = new_direction  # 在这里赋值，而不是在event事件的循环中赋值，避免按键太快
                 self.snake.move_head()
                 self.snake.body.append(self.snake.head[:])
-                if self.snake.head == self.snake.food:
-                    self.snake.generate_food()
+                if self.snake.head == self.food.food_postion:
+                    self.generate_food()
                 else:
                     self.snake.body.pop(0)
                 for seg in self.snake.body:
                     pygame.draw.rect(screen, [0, 0, 0], [seg[0], seg[1], 20, 20], 0)
-                pygame.draw.rect(screen, self.snake.food_color, [self.snake.food[0], self.snake.food[1], 20, 20], 0)
+                pygame.draw.rect(screen, self.food.colors, [self.food.food_postion[0], self.food.food_postion[1], 20, 20], 0)
                 if self.snake.check_game_status():
                     screen.blit(gameover_words, (241, 310))
                     pygame.display.update()
@@ -128,6 +129,7 @@ class GameSnake(object):
                 screen.blit(close_game_words, (233, 350))
             pygame.display.update()
             fps_clock.tick(self.snake.speed)
+
 
 if __name__ == '__main__':
     gameSanke = GameSnake(Snake())
